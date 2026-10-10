@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.streamlit/secrets.toml
+.ipynb_checkpoints/
+.DS_Store
+app.py
+src/analyzer.py
+.vscode/
+output/
