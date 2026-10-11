@@ -1,13 +1,12 @@
 
-
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from pathlib import Path
 
-# =============== PAGE CONFIG ===============
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 st.set_page_config(
     page_title="EduTrack | Student Analytics",
     page_icon="🎓",
@@ -15,7 +14,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# =============== DESIGN SYSTEM ===============
+# =========================================================
+# CSS
+# =========================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -25,530 +26,732 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-    background: #F5F7FB;
+    background: #f5f7fb;
 }
 
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #111B35, #1B3159);
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+    max-width: 1500px;
 }
 
-[data-testid="stSidebar"] * {
-    color: #FFFFFF;
+section[data-testid="stSidebar"] {
+    background: #101c36;
 }
 
-[data-testid="stSidebar"] [data-testid="stRadio"] label {
-    padding: 9px 12px;
-    border-radius: 10px;
+section[data-testid="stSidebar"] * {
+    color: white;
 }
 
 .hero {
-    background: linear-gradient(115deg, #14284F, #2865D8);
-    padding: 30px;
-    border-radius: 20px;
+    background: linear-gradient(120deg, #142544, #2756a8);
     color: white;
+    padding: 28px;
+    border-radius: 18px;
     margin-bottom: 24px;
-    box-shadow: 0 8px 24px rgba(37, 89, 190, .12);
 }
 
 .hero h1 {
     color: white;
     font-size: 29px;
-    font-weight: 800;
-    margin: 0 0 9px 0;
+    margin: 0;
 }
 
 .hero p {
-    color: #DFE9FF;
-    margin: 0;
-    font-size: 14px;
+    color: #dce7ff;
+    margin-bottom: 0;
 }
 
-.kpi {
-    background: #FFFFFF;
-    border: 1px solid #E5EAF3;
-    border-radius: 16px;
+.metric-card {
+    background: white;
+    border: 1px solid #e6eaf2;
+    border-radius: 15px;
     padding: 20px;
     min-height: 125px;
-    box-shadow: 0 5px 18px rgba(22, 40, 75, .04);
-}
-
-.kpi-label {
-    color: #697891;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .6px;
-}
-
-.kpi-value {
-    color: #172747;
-    font-size: 27px;
-    font-weight: 800;
-    margin-top: 12px;
     overflow-wrap: anywhere;
+    box-shadow: 0 3px 12px rgba(20, 37, 68, 0.04);
 }
 
-.kpi-note {
-    color: #16866A;
-    font-size: 12px;
-    margin-top: 7px;
+.metric-label {
+    color: #65718a;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.metric-value {
+    color: #172644;
+    font-size: clamp(21px, 2vw, 30px);
+    font-weight: 800;
+    margin-top: 10px;
+    line-height: 1.3;
 }
 
 .section-title {
-    color: #172747;
-    font-size: 20px;
+    color: #172644;
+    font-size: 21px;
     font-weight: 750;
-    margin: 26px 0 12px 0;
+    margin-top: 24px;
+    margin-bottom: 12px;
 }
 
-div[data-testid="stMetric"] {
+.profile-card {
     background: white;
-    border: 1px solid #E5EAF3;
-    padding: 16px;
-    border-radius: 14px;
+    padding: 22px;
+    border-radius: 16px;
+    border: 1px solid #e6eaf2;
+    margin-bottom: 18px;
 }
 
-div[data-testid="stDataFrame"] {
-    border-radius: 12px;
+.stButton button {
+    border-radius: 10px;
+    font-weight: 600;
+    min-height: 42px;
 }
 
-footer, #MainMenu {
+.stTextInput input {
+    border-radius: 10px;
+}
+
+footer {
     visibility: hidden;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# =========================================================
+# DEFAULT DATA
+# =========================================================
+SAMPLE_DATA = pd.DataFrame({
+    "USN": [
+        "4SJ25CS001", "4SJ25CS002", "4SJ25CS003",
+        "4SJ25CS004", "4SJ25CS005", "4SJ25CS006",
+        "4SJ25CS007", "4SJ25CS008", "4SJ25CS009",
+        "4SJ25CS010"
+    ],
+    "Name": [
+        "Aarav", "Ananya", "Rahul", "Priya", "Arjun",
+        "Meera", "Kiran", "Sneha", "Vijay", "Diya"
+    ],
+    "Classes_Attended": [58, 55, 50, 45, 40, 35, 30, 60, 25, 52],
+    "IA1": [92, 85, 72, 60, 48, 38, 90, 95, 55, 78],
+    "IA2": [96, 88, 68, 75, 52, 42, 78, 94, 50, 86]
+})
 
-# =============== LOAD DATA ===============
-BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR / "data" / "students.csv"
+DATA_PATH = Path("data/students.csv")
 
-@st.cache_data
-def load_data(path):
-    return pd.read_csv(path)
+# =========================================================
+# SESSION STATE
+# =========================================================
+if "total_classes" not in st.session_state:
+    st.session_state.total_classes = 60
 
-try:
-    data = load_data(str(DATA_PATH))
-except FileNotFoundError:
-    st.error("Dataset not found. Check that data/students.csv exists.")
-    st.stop()
+if "student_data" not in st.session_state:
+    if DATA_PATH.exists():
+        try:
+            st.session_state.student_data = pd.read_csv(DATA_PATH)
+        except Exception:
+            st.session_state.student_data = SAMPLE_DATA.copy()
+    else:
+        st.session_state.student_data = SAMPLE_DATA.copy()
 
-required = ["Name", "Attendance", "IA1", "IA2", "Semester"]
-missing = [col for col in required if col not in data.columns]
+# =========================================================
+# DATA PROCESSING
+# Supports IA1 only, IA1 + IA2, and partially entered IA2.
+# =========================================================
+def prepare_data(raw_df, total_classes):
+    df = raw_df.copy()
 
-if missing:
-    st.error("Missing CSV columns: " + ", ".join(missing))
-    st.info("Required: Name, Attendance, IA1, IA2, Semester")
-    st.stop()
+    required = ["USN", "Name", "Classes_Attended", "IA1"]
+    missing = [col for col in required if col not in df.columns]
 
-for col in ["Attendance", "IA1", "IA2", "Semester"]:
-    data[col] = pd.to_numeric(data[col], errors="coerce")
+    if missing:
+        raise ValueError(
+            "Missing required columns: " + ", ".join(missing)
+        )
 
-data["Name"] = data["Name"].astype("string").str.strip()
-data = data.dropna(subset=required)
-data = data[data["Name"].ne("")].copy()
+    if df.empty:
+        raise ValueError("The CSV contains no student records.")
 
-if data.empty:
-    st.error("No valid student records found in the CSV.")
-    st.stop()
+    df["USN"] = df["USN"].astype("string").str.strip()
+    df["Name"] = df["Name"].astype("string").str.strip()
 
-# Basic data validation
-if not data[["Attendance", "IA1", "IA2", "Semester"]].apply(
-    lambda col: col.between(0, 100).all()
-).all():
-    st.error("Attendance and exam marks must be between 0 and 100.")
-    st.stop()
+    if df["USN"].isna().any() or df["Name"].isna().any():
+        raise ValueError("USN and Name cannot be empty.")
 
-# =============== PERFORMANCE ANALYSIS ===============
-# Equal-weight average of three exam scores
-data["Performance_Score"] = data[
-    ["IA1", "IA2", "Semester"]
-].mean(axis=1)
+    if (df["USN"] == "").any() or (df["Name"] == "").any():
+        raise ValueError("USN and Name cannot be empty.")
 
-def get_grade(score):
-    if score >= 85:
-        return "A"
-    elif score >= 70:
-        return "B"
-    elif score >= 55:
-        return "C"
-    return "D"
+    if df["USN"].duplicated().any():
+        raise ValueError("Duplicate USN values found in the CSV.")
 
-data["Grade"] = data["Performance_Score"].apply(get_grade)
+    df["Classes_Attended"] = pd.to_numeric(
+        df["Classes_Attended"], errors="coerce"
+    )
+    df["IA1"] = pd.to_numeric(df["IA1"], errors="coerce")
 
-# Competition ranking: tied scores share a rank
-data["Rank"] = data["Performance_Score"].rank(
-    ascending=False, method="min"
-).astype(int)
+    if df["Classes_Attended"].isna().any():
+        raise ValueError("Classes_Attended must contain valid numbers.")
 
-ranked = data.sort_values(
-    ["Performance_Score", "Name"],
-    ascending=[False, True]
-).reset_index(drop=True)
+    if df["IA1"].isna().any():
+        raise ValueError("Every student must have a valid IA1 mark.")
+
+    # IA2 is optional. If missing, create an empty column.
+    if "IA2" not in df.columns:
+        df["IA2"] = float("nan")
+    else:
+        df["IA2"] = pd.to_numeric(df["IA2"], errors="coerce")
+
+    if total_classes < 1:
+        raise ValueError("Total classes must be at least 1.")
+
+    if (df["Classes_Attended"] < 0).any():
+        raise ValueError("Classes attended cannot be negative.")
+
+    if (df["Classes_Attended"] > total_classes).any():
+        raise ValueError(
+            "Classes attended cannot exceed total classes conducted."
+        )
+
+    if ((df["IA1"] < 0) | (df["IA1"] > 100)).any():
+        raise ValueError("IA1 marks must be between 0 and 100.")
+
+    valid_ia2 = df["IA2"].notna()
+
+    if ((df.loc[valid_ia2, "IA2"] < 0) |
+            (df.loc[valid_ia2, "IA2"] > 100)).any():
+        raise ValueError("IA2 marks must be between 0 and 100.")
+
+    # Calculate each student's average using available assessments only.
+    # IA1 only -> IA1 is the average.
+    # IA1 + IA2 -> average of both.
+    df["Performance_Score"] = df[["IA1", "IA2"]].mean(
+        axis=1, skipna=True
+    )
+
+    # Improvement is available only for students who have both marks.
+    df["Improvement"] = df["IA2"] - df["IA1"]
+
+    df["Attendance"] = (
+        df["Classes_Attended"] / total_classes * 100
+    ).round(2)
+
+    df["Grade"] = df["Performance_Score"].apply(
+        lambda x: "A" if x >= 85
+        else "B" if x >= 70
+        else "C" if x >= 55
+        else "D"
+    )
+
+    df["Rank"] = (
+        df["Performance_Score"]
+        .rank(method="min", ascending=False)
+        .astype(int)
+    )
+
+    df["Attendance_Status"] = df["Attendance"].apply(
+        lambda x: "Good" if x >= 85
+        else "Needs Attention" if x >= 75
+        else "Low"
+    )
+
+    return df.sort_values("Rank").reset_index(drop=True)
 
 
-# =============== REUSABLE COMPONENTS ===============
+def show_metric(label, value):
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def hero(title, subtitle):
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <div class="hero">
             <h1>{title}</h1>
             <p>{subtitle}</p>
         </div>
-    """, unsafe_allow_html=True)
-
-
-def kpi(label, value, note):
-    st.markdown(f"""
-        <div class="kpi">
-            <div class="kpi-label">{label}</div>
-            <div class="kpi-value">{value}</div>
-            <div class="kpi-note">{note}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-
-def style_chart(fig, height=340):
-    fig.update_layout(
-        height=height,
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(family="Inter", color="#34425B"),
-        margin=dict(l=18, r=18, t=55, b=18),
-        legend=dict(orientation="h", y=1.12),
-    )
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(gridcolor="#EDF0F6")
-    return fig
-
-
-# =============== SIDEBAR ===============
-with st.sidebar:
-    st.markdown("# 🎓 EduTrack")
-    st.caption("STUDENT ANALYTICS PLATFORM")
-    st.divider()
-
-    page = st.radio(
-        "NAVIGATION",
-        ["Dashboard", "Student Profile"]
-    )
-
-    st.divider()
-    st.caption("ACADEMIC OVERVIEW")
-    st.markdown(f"👥  **{len(data)} Students**")
-    st.markdown("📝  IA1 · IA2 · Semester")
-    st.markdown("📊  Academic insights")
-
-
-# =============== DASHBOARD ===============
-if page == "Dashboard":
-
-    hero(
-        "Student Performance Dashboard",
-        "Monitor exam results, attendance and class performance in one place."
-    )
-
-    avg_score = data["Performance_Score"].mean()
-    avg_attendance = data["Attendance"].mean()
-    top_student = ranked.iloc[0]
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        kpi("TOTAL STUDENTS", str(len(data)), "Students in this dataset")
-
-    with c2:
-        kpi("AVERAGE EXAM SCORE", f"{avg_score:.1f}%", "IA1, IA2 and Semester")
-
-    with c3:
-        kpi("AVERAGE ATTENDANCE", f"{avg_attendance:.1f}%", "Class attendance")
-
-    with c4:
-        kpi(
-            "TOP PERFORMER",
-            str(top_student["Name"]),
-            f"{top_student['Performance_Score']:.1f}% exam average"
-        )
-
-    st.markdown(
-        '<div class="section-title">📊 Exam Performance Overview</div>',
+        """,
         unsafe_allow_html=True
     )
 
-    left, right = st.columns([1.4, 1])
+
+def search_students(data, query):
+    if not query.strip():
+        return data.copy()
+
+    q = query.strip()
+
+    mask = (
+        data["Name"].astype(str).str.contains(
+            q, case=False, na=False, regex=False
+        )
+        | data["USN"].astype(str).str.contains(
+            q, case=False, na=False, regex=False
+        )
+    )
+
+    return data[mask].copy()
+
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+with st.sidebar:
+    st.markdown("# 🎓 EduTrack")
+    st.caption("Student Performance Analytics")
+    st.divider()
+
+    page = st.radio(
+        "Navigation",
+        ["Dashboard", "Student Profile", "Data Upload"]
+    )
+
+    st.divider()
+    st.caption("Academic Analytics")
+
+# =========================================================
+# PROCESS ACTIVE DATA
+# =========================================================
+try:
+    df = prepare_data(
+        st.session_state.student_data,
+        st.session_state.total_classes
+    )
+    data_error = None
+except Exception as error:
+    df = pd.DataFrame()
+    data_error = str(error)
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+if page == "Dashboard":
+    hero(
+        "Student Performance Dashboard",
+        "Monitor student marks, attendance, and academic progress."
+    )
+
+    if data_error:
+        st.error(data_error)
+        st.info("Open Data Upload to correct or replace the dataset.")
+        st.stop()
+
+    ia2_available = df["IA2"].notna().any()
+
+    total_students = len(df)
+    average_marks = df["Performance_Score"].mean()
+    average_attendance = df["Attendance"].mean()
+    top_student = df.loc[df["Performance_Score"].idxmax()]
+
+    # KPI cards
+    cols = st.columns(4, gap="medium")
+
+    with cols[0]:
+        show_metric("Total Students", str(total_students))
+
+    with cols[1]:
+        show_metric("Class Average Marks", f"{average_marks:.1f} / 100")
+
+    with cols[2]:
+        show_metric("Average Attendance", f"{average_attendance:.1f}%")
+
+    with cols[3]:
+        show_metric("Top Performer", str(top_student["Name"]))
+
+    # Assessment summary
+    st.markdown(
+        '<div class="section-title">Academic Overview</div>',
+        unsafe_allow_html=True
+    )
+
+    left, right = st.columns(2, gap="large")
 
     with left:
-        exam_means = data[["IA1", "IA2", "Semester"]].mean()
-        exam_means = exam_means.rename_axis("Exam").reset_index(
-            name="Average Marks"
-        )
-
-        fig = px.bar(
-            exam_means,
-            x="Exam",
-            y="Average Marks",
-            color="Exam",
-            text_auto=".1f",
-            color_discrete_map={
-                "IA1": "#3B82F6",
-                "IA2": "#14B8A6",
-                "Semester": "#8B5CF6"
-            },
-            title="Class Average by Exam"
-        )
-        fig.update_traces(textposition="outside")
-        fig.update_yaxes(range=[0, 110], title="Average marks (%)")
-        st.plotly_chart(style_chart(fig), use_container_width=True)
-
-    with right:
         grade_counts = (
-            data["Grade"]
-            .value_counts()
+            df["Grade"].value_counts()
             .reindex(["A", "B", "C", "D"], fill_value=0)
             .rename_axis("Grade")
             .reset_index(name="Students")
         )
 
-        fig = px.pie(
+        fig_grade = px.pie(
             grade_counts,
             names="Grade",
             values="Students",
-            hole=0.68,
-            color="Grade",
-            color_discrete_map={
-                "A": "#14B8A6",
-                "B": "#3B82F6",
-                "C": "#F59E0B",
-                "D": "#EF4444"
-            },
+            hole=0.58,
             title="Grade Distribution"
         )
-        fig.update_traces(textinfo="percent+label")
-        st.plotly_chart(style_chart(fig), use_container_width=True)
+        fig_grade.update_layout(
+            margin=dict(t=55, b=15, l=15, r=15)
+        )
+        st.plotly_chart(fig_grade, use_container_width=True)
 
+    with right:
+        assessment_names = ["IA1"]
+        assessment_averages = [df["IA1"].mean()]
+
+        if ia2_available:
+            assessment_names.append("IA2")
+            assessment_averages.append(df["IA2"].mean())
+
+        assessment_summary = pd.DataFrame({
+            "Assessment": assessment_names,
+            "Average Marks": assessment_averages
+        })
+
+        fig_marks = px.line(
+            assessment_summary,
+            x="Assessment",
+            y="Average Marks",
+            markers=True,
+            title="Average Marks by Assessment"
+        )
+        fig_marks.update_yaxes(range=[0, 100])
+        fig_marks.update_layout(
+            margin=dict(t=55, b=15, l=15, r=15),
+            yaxis_title="Average Marks"
+        )
+        st.plotly_chart(fig_marks, use_container_width=True)
+
+    # Searchable student table
     st.markdown(
-        '<div class="section-title">📈 Compare Student Exam Marks</div>',
+        '<div class="section-title">Search Students</div>',
         unsafe_allow_html=True
     )
 
-    exam_data = ranked[
-        ["Name", "IA1", "IA2", "Semester"]
-    ].melt(
-        id_vars="Name",
-        var_name="Exam",
-        value_name="Marks"
+    search_query = st.text_input(
+        "Search by student name or USN",
+        placeholder="Type a name or USN...",
+        key="dashboard_search"
     )
 
-    fig = px.bar(
-        exam_data,
-        x="Name",
-        y="Marks",
-        color="Exam",
-        barmode="group",
-        color_discrete_map={
-            "IA1": "#3B82F6",
-            "IA2": "#14B8A6",
-            "Semester": "#8B5CF6"
-        }
-    )
-    fig.update_yaxes(range=[0, 100], title="Marks (%)")
-    st.plotly_chart(style_chart(fig, 420), use_container_width=True)
+    filtered_df = search_students(df, search_query)
 
-    st.markdown(
-        '<div class="section-title">🏆 Class Leaderboard</div>',
-        unsafe_allow_html=True
-    )
+    st.caption(f"Showing {len(filtered_df)} of {len(df)} students")
 
-    display = ranked[
-        ["Rank", "Name", "IA1", "IA2", "Semester",
-         "Performance_Score", "Grade"]
-    ].copy()
+    display_columns = [
+        "Rank", "USN", "Name", "Classes_Attended",
+        "Attendance", "IA1", "Performance_Score", "Grade"
+    ]
 
-    display["Performance_Score"] = display["Performance_Score"].round(1)
+    if ia2_available:
+        display_columns.extend(["IA2", "Improvement"])
+
+    table_df = filtered_df[display_columns].rename(columns={
+        "Classes_Attended": "Classes Attended",
+        "Attendance": "Attendance (%)",
+        "Performance_Score": "Average Marks",
+        "Improvement": "IA Improvement"
+    })
 
     st.dataframe(
-        display,
+        table_df,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Rank": st.column_config.NumberColumn("Rank", format="#%d"),
-            "Performance_Score": st.column_config.ProgressColumn(
-                "Average Score",
-                min_value=0,
-                max_value=100,
+            "Attendance (%)": st.column_config.NumberColumn(
                 format="%.1f%%"
             ),
-            "IA1": st.column_config.NumberColumn("IA1", format="%.1f"),
-            "IA2": st.column_config.NumberColumn("IA2", format="%.1f"),
-            "Semester": st.column_config.NumberColumn(
-                "Semester", format="%.1f"
+            "Average Marks": st.column_config.NumberColumn(
+                format="%.1f"
+            ),
+            "IA Improvement": st.column_config.NumberColumn(
+                format="%+.1f"
             )
         }
     )
 
+    if filtered_df.empty:
+        st.info("No matching students found.")
 
-# =============== STUDENT PROFILE ===============
-else:
+    st.download_button(
+        "Download Student Report CSV",
+        data=filtered_df.to_csv(index=False).encode("utf-8"),
+        file_name="edutrack_student_report.csv",
+        mime="text/csv"
+    )
 
+    # Support lists
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        st.markdown("### Attendance Follow-up")
+        low_attendance = df[df["Attendance"] < 75].sort_values(
+            "Attendance"
+        )
+
+        if low_attendance.empty:
+            st.success("No students below 75% attendance.")
+        else:
+            st.dataframe(
+                low_attendance[["USN", "Name", "Attendance"]].rename(
+                    columns={"Attendance": "Attendance (%)"}
+                ),
+                use_container_width=True,
+                hide_index=True
+            )
+
+    with col2:
+        st.markdown("### Students Needing Academic Support")
+        low_marks = df[df["Performance_Score"] < 55].sort_values(
+            "Performance_Score"
+        )
+
+        if low_marks.empty:
+            st.success("No students below 55 average marks.")
+        else:
+            st.dataframe(
+                low_marks[["USN", "Name", "Performance_Score", "Grade"]].rename(
+                    columns={"Performance_Score": "Average Marks"}
+                ),
+                use_container_width=True,
+                hide_index=True
+            )
+
+# =========================================================
+# STUDENT PROFILE
+# =========================================================
+elif page == "Student Profile":
     hero(
         "Student Profile",
-        "Explore individual exam results, attendance and academic standing."
+        "View individual marks, academic progress, and attendance."
     )
 
-    names = sorted(data["Name"].unique())
+    if data_error:
+        st.error(data_error)
+        st.stop()
 
-    selected_name = st.selectbox(
-        "🔎 Search or select a student",
-        names
+    profile_query = st.text_input(
+        "Search student by name or USN",
+        placeholder="Type a name or USN...",
+        key="profile_search"
     )
 
-    student = data[data["Name"] == selected_name].iloc[0]
+    matching = search_students(df, profile_query)
 
-    st.markdown(
-        '<div class="section-title">👤 Academic Summary</div>',
-        unsafe_allow_html=True
+    if matching.empty:
+        st.warning("No matching students found.")
+        st.stop()
+
+    selected_usn = st.selectbox(
+        "Select Student",
+        matching["USN"].tolist(),
+        format_func=lambda usn: (
+            f"{matching.loc[matching['USN'] == usn, 'Name'].iloc[0]} ({usn})"
+        )
     )
 
-    c1, c2, c3, c4 = st.columns(4)
+    student = df[df["USN"] == selected_usn].iloc[0]
+    ia2_available_for_student = pd.notna(student["IA2"])
 
-    with c1:
-        kpi(
-            "CLASS RANK",
-            f"#{int(student['Rank'])}",
-            f"Out of {len(data)} students"
+    st.markdown('<div class="profile-card">', unsafe_allow_html=True)
+    st.subheader(f"🎓 {student['Name']}")
+    st.write(f"**USN:** {student['USN']}")
+    st.write(f"**Rank:** {student['Rank']} of {len(df)}")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    cols = st.columns(4, gap="medium")
+
+    with cols[0]:
+        show_metric("Average Marks", f"{student['Performance_Score']:.1f}/100")
+
+    with cols[1]:
+        show_metric("Attendance", f"{student['Attendance']:.1f}%")
+
+    with cols[2]:
+        show_metric("Grade", student["Grade"])
+
+    with cols[3]:
+        value = (
+            f"{student['Improvement']:+.1f}"
+            if ia2_available_for_student else "Not available"
         )
+        show_metric("IA Improvement", value)
 
-    with c2:
-        kpi(
-            "EXAM AVERAGE",
-            f"{student['Performance_Score']:.1f}%",
-            "IA1, IA2 and Semester"
-        )
-
-    with c3:
-        kpi(
-            "ATTENDANCE",
-            f"{student['Attendance']:.1f}%",
-            "Recorded attendance"
-        )
-
-    with c4:
-        kpi(
-            "GRADE",
-            str(student["Grade"]),
-            "Based on exam average"
-        )
-
-    st.markdown(
-        '<div class="section-title">🎯 Performance Breakdown</div>',
-        unsafe_allow_html=True
-    )
-
-    left, right = st.columns([1, 1.5])
+    left, right = st.columns(2, gap="large")
 
     with left:
-        score = float(student["Performance_Score"])
+        student_assessments = {"Assessment": ["IA1"], "Marks": [student["IA1"]]}
 
-        fig = go.Figure(go.Pie(
-            values=[score, 100 - score],
-            labels=["Achieved", "Remaining"],
-            hole=0.78,
-            marker_colors=["#3B82F6", "#E8EDF5"],
-            textinfo="none",
-            sort=False,
-            direction="clockwise"
-        ))
+        if ia2_available_for_student:
+            student_assessments["Assessment"].append("IA2")
+            student_assessments["Marks"].append(student["IA2"])
 
-        fig.add_annotation(
-            text=f"<b>{score:.1f}%</b><br><sup>Exam Average</sup>",
-            x=0.5,
-            y=0.5,
-            showarrow=False,
-            font=dict(size=22, color="#172747")
+        marks_data = pd.DataFrame(student_assessments)
+
+        fig = px.line(
+            marks_data,
+            x="Assessment",
+            y="Marks",
+            markers=True,
+            title="Student Assessment Marks"
         )
-
-        fig.update_layout(
-            title="Overall Performance",
-            showlegend=False,
-            height=340,
-            paper_bgcolor="white",
-            margin=dict(l=10, r=10, t=55, b=10)
-        )
-
+        fig.update_yaxes(range=[0, 100])
         st.plotly_chart(fig, use_container_width=True)
 
     with right:
-        exam_results = pd.DataFrame({
-            "Exam": ["IA1", "IA2", "Semester"],
-            "Marks": [
-                student["IA1"],
-                student["IA2"],
-                student["Semester"]
-            ]
-        })
+        st.markdown("### Attendance Details")
+        st.progress(min(float(student["Attendance"]) / 100, 1.0))
 
-        fig = px.bar(
-            exam_results,
-            x="Exam",
-            y="Marks",
-            color="Exam",
-            text_auto=".1f",
-            color_discrete_map={
-                "IA1": "#3B82F6",
-                "IA2": "#14B8A6",
-                "Semester": "#8B5CF6"
-            },
-            title=f"{student['Name']}'s Exam Results"
+        st.write(f"**Attendance:** {student['Attendance']:.1f}%")
+        st.write(
+            f"**Classes attended:** {student['Classes_Attended']} / "
+            f"{st.session_state.total_classes}"
         )
-        fig.update_traces(textposition="outside")
-        fig.update_yaxes(range=[0, 110], title="Marks (%)")
-        st.plotly_chart(style_chart(fig, 340), use_container_width=True)
 
-    st.markdown(
-        '<div class="section-title">📝 Detailed Exam Results</div>',
-        unsafe_allow_html=True
-    )
+        if student["Attendance"] >= 85:
+            st.success("Good attendance")
+        elif student["Attendance"] >= 75:
+            st.info("Attendance needs attention")
+        else:
+            st.warning("Low attendance")
 
-    e1, e2, e3 = st.columns(3)
+    st.markdown("### Academic Feedback")
 
-    with e1:
-        st.metric("IA1 Marks", f"{student['IA1']:.1f}%")
-
-    with e2:
-        st.metric("IA2 Marks", f"{student['IA2']:.1f}%")
-
-    with e3:
-        st.metric("Semester Marks", f"{student['Semester']:.1f}%")
-
-    st.markdown(
-        '<div class="section-title">📌 Attendance Status</div>',
-        unsafe_allow_html=True
-    )
-
-    attendance = float(student["Attendance"])
-
-    st.progress(
-        int(attendance),
-        text=f"Attendance: {attendance:.1f}%"
-    )
-
-    if attendance < 75:
-        st.warning(
-            "Attendance is below 75%. The student may need follow-up."
-        )
+    if student["Performance_Score"] >= 85:
+        st.success("Excellent performance. Keep it up!")
+    elif student["Performance_Score"] >= 70:
+        st.info("Good performance. Keep revising regularly.")
+    elif student["Performance_Score"] >= 55:
+        st.warning("Focus on topics where marks were lost.")
     else:
-        st.success("Attendance meets the 75% threshold.")
+        st.error("A focused study plan and academic support are recommended.")
 
-    if student["Performance_Score"] < 55:
-        st.warning(
-            "The exam average is low. Additional academic support may help."
-        )
+    if ia2_available_for_student:
+        if student["Improvement"] > 0:
+            st.success(
+                f"IA2 marks improved by {student['Improvement']:.1f}."
+            )
+        elif student["Improvement"] < 0:
+            st.warning(
+                f"IA2 marks decreased by {abs(student['Improvement']):.1f}."
+            )
+        else:
+            st.info("IA1 and IA2 marks are the same.")
+
+# =========================================================
+# DATA UPLOAD
+# =========================================================
+elif page == "Data Upload":
+    hero(
+        "Data Management",
+        "Upload student records and set total classes conducted."
+    )
+
+    st.markdown("### Step 1 — Upload Student CSV")
+
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file",
+        type=["csv"],
+        help="Required: USN, Name, Classes_Attended, IA1. IA2 is optional."
+    )
+
+    uploaded_df = None
+
+    if uploaded_file is not None:
+        try:
+            uploaded_df = pd.read_csv(uploaded_file)
+
+            st.success(
+                f"CSV loaded successfully: {len(uploaded_df)} student records."
+            )
+
+            st.dataframe(
+                uploaded_df,
+                use_container_width=True,
+                hide_index=True
+            )
+
+        except Exception as error:
+            st.error(f"Could not read the CSV file: {error}")
+
+    st.markdown("### Step 2 — Enter Total Classes")
+
+    total_classes_input = st.number_input(
+        "Total classes conducted",
+        min_value=1,
+        max_value=500,
+        value=int(st.session_state.total_classes),
+        step=1
+    )
 
     st.caption(
-        "Scoring note: Exam average is calculated as the simple mean of IA1, "
-        "IA2 and Semester marks. Grade thresholds are configurable and should "
-        "be aligned with your institution's grading rules."
+        "The app uses this number to calculate every student's attendance."
     )
 
+    apply_col, reset_col = st.columns(2, gap="medium")
 
-# =============== FOOTER ===============
+    with apply_col:
+        if st.button(
+            "Apply Dataset & Settings",
+            type="primary",
+            use_container_width=True
+        ):
+            if uploaded_file is None or uploaded_df is None:
+                st.warning("Upload a valid CSV file before applying.")
+            else:
+                try:
+                    # Validate the entire dataset before changing active data.
+                    prepare_data(uploaded_df, int(total_classes_input))
+
+                    st.session_state.student_data = uploaded_df.copy()
+                    st.session_state.total_classes = int(total_classes_input)
+
+                    st.success("Dataset and settings applied successfully!")
+                    st.rerun()
+
+                except Exception as error:
+                    st.error(f"Could not apply dataset: {error}")
+
+    with reset_col:
+        if st.button(
+            "Reset Default Dataset",
+            use_container_width=True
+        ):
+            st.session_state.student_data = SAMPLE_DATA.copy()
+            st.session_state.total_classes = 60
+            st.success("Default dataset restored.")
+            st.rerun()
+
+    st.divider()
+    st.markdown("### CSV Format")
+
+    st.write(
+        "IA1 is required. IA2 is optional: either omit the IA2 column "
+        "or leave marks blank until they are available."
+    )
+
+    st.code(
+        "USN,Name,Classes_Attended,IA1\n"
+        "4SJ25CS001,Aarav,58,92\n"
+        "4SJ25CS002,Ananya,55,85",
+        language="csv"
+    )
+
+    st.download_button(
+        "Download IA1-Only CSV Template",
+        data=SAMPLE_DATA[[
+            "USN", "Name", "Classes_Attended", "IA1"
+        ]].to_csv(index=False).encode("utf-8"),
+        file_name="student_ia1_template.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        "Download IA1 + IA2 CSV Template",
+        data=SAMPLE_DATA.to_csv(index=False).encode("utf-8"),
+        file_name="student_ia1_ia2_template.csv",
+        mime="text/csv"
+    )
+
+# =========================================================
+# FOOTER
+# =========================================================
 st.divider()
-st.caption("EduTrack | Student Performance Analytics")
+st.caption("EduTrack • Student Performance Analytics")

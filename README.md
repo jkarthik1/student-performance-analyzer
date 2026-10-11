@@ -1,42 +1,71 @@
 # EduTrack — Student Performance Analyzer
 
-An interactive student analytics dashboard built with Python, Streamlit, Pandas, and Plotly.
+An interactive student performance dashboard built using Python 3.13, Streamlit, Pandas, and Plotly.
 
-## About the Project
+## Overview
 
-EduTrack is a student performance analysis application that organizes academic records and presents them through an interactive dashboard. It helps users explore exam scores, attendance, grade distribution, and student rankings in one place.
+EduTrack is a data-driven web application that helps users analyze student assessment marks and attendance through an interactive dashboard.
 
-This project was developed to practise Python application development, data processing, data visualization, and building a user-friendly interface.
+The application allows users to upload student datasets, explore class performance, search for individual students, compare internal assessment marks, and identify students who may need academic support.
 
-## Features
+This project was developed to strengthen practical skills in Python programming, data analysis, data visualization, and web application development.
 
-- **Class Dashboard:** View the number of students, average exam score, average attendance, and top-performing student.
-- **Exam Analysis:** Compare average scores across IA1, IA2, and semester exams.
-- **Grade Distribution:** Explore the distribution of students across grades A, B, C, and D.
-- **Student Comparison:** Compare assessment scores using interactive charts.
-- **Student Profiles:** Select a student to view their scores, attendance, grade, and class rank.
-- **Attendance Monitoring:** Highlight attendance below the configured 75% threshold.
-- **Data Validation:** Check required CSV columns, numeric values, missing records, and score ranges.
-- **Leaderboard:** Display students ranked by their calculated average exam score.
+## Key Features
+
+- **Interactive Dashboard:** Displays total students, class average marks, average attendance, and the top performer.
+- **Flexible Dataset Support:** Supports IA1-only datasets and datasets containing both IA1 and IA2.
+- **Student Search:** Search student records by name or USN.
+- **Student Profiles:** View individual assessment marks, attendance, grade, and rank.
+- **Assessment Comparison:** Compare IA1 and IA2 marks when IA2 data is available.
+- **Grade Distribution:** Visualize how students are distributed across grade categories.
+- **Attendance Monitoring:** Identify students with attendance below the configured 75% threshold.
+- **CSV Upload:** Upload a custom dataset and configure the total number of classes.
+- **CSV Templates:** Download example templates for IA1-only and IA1 + IA2 datasets.
+- **Data Export:** Download processed student analysis as a CSV file.
+- **Input Validation:** Validate required columns and check marks and attendance values.
 
 ## Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| Python | Application logic and data processing |
+| Python 3.13 | Application logic and data processing |
 | Streamlit | Interactive web application |
-| Pandas | Loading, cleaning, and analyzing tabular data |
-| Plotly Express | Interactive data visualizations |
-| Plotly Graph Objects | Custom performance chart |
-| CSV | Sample dataset format |
+| Pandas | Data manipulation and analysis |
+| Plotly | Interactive data visualization |
+| CSV | Data import and export |
+| Git | Version control |
+| GitHub | Source code hosting and portfolio |
 
-## How Performance Is Calculated
+## How It Works
 
-The application calculates the performance score as the simple average of IA1, IA2, and Semester marks:
+1. Upload a student dataset in CSV format.
+2. Configure the total number of classes.
+3. Validate and process the uploaded data.
+4. Explore class statistics, student rankings, charts, and attendance.
+5. Search for individual students and inspect their profiles.
+6. Download the processed analysis when required.
 
-**Performance Score = (IA1 + IA2 + Semester) / 3**
+## Performance Calculation
 
-The current grade thresholds are:
+EduTrack calculates a performance score using the available internal assessment marks.
+
+**When only IA1 is available:**
+
+Performance Score = IA1
+
+**When both IA1 and IA2 are available:**
+
+Performance Score = (IA1 + IA2) / 2
+
+When IA2 is available, assessment improvement is calculated as:
+
+Improvement = IA2 − IA1
+
+When IA2 is unavailable, the score uses IA1 alone and assessment improvement is not calculated for that student.
+
+The class average marks are calculated from the student performance scores and are measured out of 100.
+
+### Grade Classification
 
 | Grade | Performance Score |
 |---|---:|
@@ -45,53 +74,95 @@ The current grade thresholds are:
 | C | 55 to below 70 |
 | D | Below 55 |
 
-Students are ranked by performance score, with higher scores receiving better ranks. Equal scores share the same rank.
+These thresholds are demonstration rules and should be adjusted to match an institution's official grading policy when necessary.
 
-**Note:** These are demonstration rules defined in the code. They should be adjusted to match the institution's official grading policy before real-world use.
+## Dataset Format
 
-## Dataset
-
-The sample dataset is stored at `data/students.csv`.
+The application requires these CSV columns:
 
 | Column | Description |
 |---|---|
-| `Name` | Student name or fictional sample name |
-| `Attendance` | Attendance percentage |
+| `USN` | Unique student identifier |
+| `Name` | Student display name |
+| `Classes_Attended` | Number of classes attended |
 | `IA1` | First internal assessment marks |
-| `IA2` | Second internal assessment marks |
-| `Semester` | Semester examination marks |
 
-The current application expects the attendance and examination values to be between 0 and 100.
+The `IA2` column is optional. It can be omitted or contain blank values when second assessment marks are unavailable.
 
-## Getting Started
+The total number of classes is configured separately in the application.
+
+### Example: IA1-Only Dataset
+
+```csv
+USN,Name,Classes_Attended,IA1
+STU001,student_01,58,92
+STU002,student_02,55,85
+STU003,student_03,50,72
+```
+
+### Example: IA1 and IA2 Dataset
+
+```csv
+USN,Name,Classes_Attended,IA1,IA2
+STU001,student_01,58,92,95
+STU002,student_02,55,85,82
+STU003,student_03,50,72,78
+```
+
+These examples use fictional identifiers and names. Never publish real student names, USNs, or identifiable academic records in a public repository.
+
+## Installation and Setup
 
 ### Prerequisites
 
-- Python installed on your computer
-- pip, Python's package installer
+- Python 3.13
+- pip
+- Git
 
-### 1. Clone the repository
+The application is intended to run in a Python 3.13 environment with the required dependencies installed.
 
-Replace the placeholder with the repository URL from GitHub.
+### 1. Clone the Repository
+
+Replace the placeholder with your actual GitHub repository URL.
 
 ```bash
 git clone <YOUR_REPOSITORY_URL>
 cd student-performance-analyzer
 ```
 
-### 2. Install dependencies
+### 2. Create a Virtual Environment
+
+On Windows:
+
+```bash
+py -3.13 -m venv .venv
+```
+
+Activate the environment in Command Prompt:
+
+```bash
+.venv\Scripts\activate
+```
+
+Activate it in Git Bash:
+
+```bash
+source .venv/Scripts/activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 3. Run the application
+### 4. Run the Application
 
 ```bash
 python -m streamlit run frontend.py
 ```
 
-Streamlit will display a local URL in the terminal. Open that URL in your browser to use the application.
+Open the local URL displayed in the terminal to use the application in your browser.
 
 ## Project Structure
 
@@ -105,34 +176,39 @@ student-performance-analyzer/
 └── .gitignore
 ```
 
-## Learning Outcomes
+The structure above illustrates the main project files. Your actual repository may contain additional modules, charts, or supporting files.
 
-Through this project, I am practising:
+## Skills Demonstrated
 
-- Python programming and reusable functions
-- Data loading and validation with Pandas
-- Interactive data visualization with Plotly
-- Building dashboards with Streamlit
-- Organizing project files and managing versions with Git and GitHub
+- Python programming and application development
+- Data manipulation and validation using Pandas
+- Interactive dashboard development using Streamlit
+- Data visualization using Plotly
+- CSV processing and data export
+- Basic software project organization
+- Git and GitHub version control
+- Privacy-conscious use of demonstration data
 
 ## Future Improvements
 
-- Add filters for attendance, grades, and performance.
-- Allow users to upload their own CSV datasets safely.
-- Add downloadable analysis reports.
-- Improve error handling and automated tests.
-- Explore machine learning for a clearly defined prediction task after collecting suitable data and evaluating model performance.
+- Add automated tests for calculations and data validation.
+- Introduce additional filters for marks, attendance, and grades.
+- Improve responsive design and accessibility.
+- Generate downloadable class-level reports.
+- Explore a suitable machine learning feature with appropriate data and evaluation.
 
 ## Limitations
 
-- The application uses the data supplied in the CSV file.
-- Grade thresholds and attendance rules are configurable demonstration rules, not official academic policies.
-- The performance score is a simple average, not a validated prediction of a student's future results.
-- The application does not currently use a machine learning model.
+- Results depend on the quality and completeness of uploaded data.
+- Grade thresholds are demonstration rules.
+- Performance scores summarize available assessment marks; they do not predict future academic results.
+- The current application is a data analysis dashboard and does not currently use a machine learning model.
 
-## Disclaimer
+## Privacy and Disclaimer
 
-This project is intended for educational and demonstration purposes. Its outputs should not be used as the sole basis for academic decisions. Only fictional or appropriately anonymized student data should be published in a public repository.
+EduTrack is an educational portfolio project. Use fictional or appropriately anonymized student data in public repositories. Do not publish sensitive academic records or personal information.
+
+The application is intended for demonstration purposes and should not be used as the sole basis for academic decisions.
 
 ## Author
 
